@@ -1,269 +1,265 @@
-{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang1033{\fonttbl{\f0\fnil\fcharset0 Calibri;}}
-{\*\generator Riched20 10.0.22621}\viewkind4\uc1 
-\pard\sa200\sl276\slmult1\f0\fs22\lang9 import time, os\par
-\par
-height = 20\par
-width = 40\par
-numHoles = 9\par
-maps=[]\par
-\par
-def makeMap(height,width):\par
-    map=[]\par
-    map.append(list(" "+("_"*width)))\par
-    for j in range(height):\par
-        map.append(list("|"+(" "*width)+"|"))\par
-    map.append(list("|"+("_"*width)+"|"))\par
-    return map\par
-    \par
-class Hole:\par
-    def __init__(self,MAP,LENGTH,NAME,TEE,BASKET,TREES):\par
-        self.map = MAP\par
-        self.length = LENGTH\par
-        self.name = NAME\par
-        self.tee = TEE\par
-        self.basket = BASKET\par
-        self.discLoc = TEE\par
-        self.trees = TREES\par
-        self.score = -3\par
-        self.par = 3\par
-    \par
-    def updateMap(self):\par
-        self.map[self.discLoc[0]][self.discLoc[1]] = "o"\par
-        self.map[self.basket[0]][self.basket[1]] = "B"\par
-        for tree in self.trees:\par
-            self.map[tree[0]][tree[1]] = "T"\par
-        \par
-    def printMap(self):\par
-        for x in self.map:\par
-            print(*x, sep='')\par
-        print(f"\{self.name\}: \{self.length\} feet\\n")\par
-    \par
-    def deleteDisc(self):\par
-        self.map[self.discLoc[0]][self.discLoc[1]] = " "\par
-    \par
-    def playHole(self):\par
-        while self.map[self.discLoc[0]][self.discLoc[1]] != "B":    \par
-            print(f"Throws this hole: \{self.score+self.par\}")\par
-            self.updateMap()\par
-            self.printMap()\par
-        \par
-            currentThrow = getNewThrow()\par
-            currentThrow.updateValues()\par
-            currentThrow.showThrow(hole)\par
-            self.score+=1\par
-            os.system('cls' if os.name == 'nt' else 'clear')\par
-        print("Clank go the chains!")\par
-        print(f"You completed this hole in \{self.score+self.par\} throws.")\par
-        self.printMap()\par
-        input("Press enter to go to next hole")\par
-        os.system('cls' if os.name == 'nt' else 'clear')\par
-\par
-class Throw:\par
-    def __init__(self,FADE,TURN,HANDED,SWING,DISC,STABILITY,ANGLE,FORCE,DIRECTION):\par
-        self.fade=FADE\par
-        self.turn=TURN\par
-        self.handed=HANDED\par
-        self.swing=SWING\par
-        self.disc=DISC\par
-        self.stability=STABILITY\par
-        self.angle=ANGLE\par
-        self.force=FORCE\par
-        self.direction=DIRECTION\par
-        self.lastRow = 19\par
-        self.lastCol = 20\par
-        self.hit = False\par
-        self.turnSpeed = FORCE/2\par
-        if DISC == "1":\par
-            self.fadeSpeed = 1\par
-        elif DISC == "2":\par
-            self.fadeSpeed = 2\par
-        else:\par
-            self.fadeSpeed = 3\par
-        \par
-    def updateValues(self):\par
-        if self.handed=="1":\par
-            self.handed=1\par
-        else:\par
-            self.handed=-1\par
-        if self.swing == "2":\par
-            self.swing=-1\par
-        else:\par
-            self.swing=1\par
-        if self.disc == "1":\par
-            self.turnSpeed = 9\par
-            self.fadeSpeed = 1\par
-        elif self.disc == "2":\par
-            self.force*=1.3\par
-            self.turnSpeed = 7\par
-            self.fadeSpeed = 3\par
-        elif self.disc == "3":\par
-            self.force*=1.5\par
-            self.turnSpeed = 7\par
-            self.fadeSpeed = 5\par
-        if self.stability == "1":\par
-            self.fade=(self.handed*self.swing)*2\par
-        elif self.stability == "2":\par
-            self.fade=(self.handed*self.swing)\par
-        elif self.stability == "3":\par
-            self.turn=(self.handed*self.swing)*-1\par
-            self.fade=(self.handed*self.swing)\par
-        if self.angle=="hyzer":\par
-            self.turn+=(self.handed*self.swing)\par
-            self.fade+=(self.handed*self.swing)\par
-        elif self.angle=="anhyzer":\par
-            self.turn-=(self.handed*self.swing)\par
-    \par
-    def moveDisc(self):\par
-        if self.direction=="8":\par
-            if self.hit==True:\par
-                hole.discLoc[0]+=1\par
-            else:\par
-                hole.discLoc[0]+=-1\par
-            if self.force < self.fadeSpeed:\par
-                hole.discLoc[1]+=self.fade\par
-            elif self.force > self.turnSpeed:\par
-                hole.discLoc[1]+=self.turn\par
-        elif self.direction=="7":\par
-            if self.hit==True:\par
-                hole.discLoc[0]+=1\par
-                hole.discLoc[1]-=1\par
-            else:\par
-                hole.discLoc[0]+=-1\par
-                hole.discLoc[1]-=1\par
-            if self.force < self.fadeSpeed:\par
-                hole.discLoc[1]+=self.fade\par
-            elif self.force > self.turnSpeed:\par
-                hole.discLoc[1]+=self.turn\par
-        elif self.direction=="9":\par
-            if self.hit==True:\par
-                hole.discLoc[0]+=1\par
-                hole.discLoc[1]+=1\par
-            else:\par
-                hole.discLoc[0]+=-1\par
-                hole.discLoc[1]+=1\par
-            if self.force < self.fadeSpeed:\par
-                hole.discLoc[1]+=self.fade\par
-            elif self.force > self.turnSpeed:\par
-                hole.discLoc[1]+=self.turn\par
-        elif self.direction=="4":\par
-            if self.hit==True:\par
-                hole.discLoc[1]+=1\par
-            else:\par
-                hole.discLoc[1]+=-1\par
-            if self.force < 4:\par
-                hole.discLoc[0]+=self.fade\par
-            elif self.force > 7:\par
-                hole.discLoc[0]+=self.turn\par
-        elif self.direction=="6":\par
-            if self.hit==True:\par
-                hole.discLoc[1]+=-1\par
-            else:\par
-                hole.discLoc[1]+=1\par
-            if self.force < 4:\par
-                hole.discLoc[0]+=self.fade\par
-            elif self.force > 7:\par
-                hole.discLoc[0]+=self.turn\par
-        elif self.direction=="1":\par
-            if self.hit==True:\par
-                hole.discLoc[0]+=-1\par
-                hole.discLoc[1]+=-1\par
-            else:\par
-                hole.discLoc[0]+=1\par
-                hole.discLoc[1]+=-1\par
-            if self.force < self.fadeSpeed:\par
-                hole.discLoc[1]-=self.fade\par
-            elif self.force > self.fadeSpeed:\par
-                hole.discLoc[1]-=self.turn\par
-        elif self.direction=="2":\par
-            if self.hit==True:\par
-                hole.discLoc[0]+=-1\par
-            else:\par
-                hole.discLoc[0]+=1\par
-            if self.force < self.fadeSpeed:\par
-                hole.discLoc[1]-=self.fade\par
-            elif self.force > self.fadeSpeed:\par
-                hole.discLoc[1]-=self.turn\par
-        elif self.direction=="3":\par
-            if self.hit==True:\par
-                hole.discLoc[0]+=-1\par
-                hole.discLoc[1]+=1\par
-            else:\par
-                hole.discLoc[0]+=1\par
-                hole.discLoc[1]+=1\par
-            if self.force < self.fadeSpeed:\par
-                hole.discLoc[1]-=self.fade\par
-            elif self.force > self.fadeSpeed:\par
-                hole.discLoc[1]-=self.turn\par
-        self.force-=1\par
-    \par
-    def showThrow(self,hole):\par
-        # While disc still moving and not in basket\par
-        while self.force > 0 and hole.map[hole.discLoc[0]][hole.discLoc[1]] != "B":\par
-            os.system('cls' if os.name == 'nt' else 'clear')\par
-            self.lastRow=hole.discLoc[0]\par
-            self.lastCol=hole.discLoc[1]\par
-            hole.deleteDisc()\par
-            self.moveDisc()\par
-        ## hit tree\par
-            if hole.map[hole.discLoc[0]][hole.discLoc[1]] == "T":\par
-                self.hit=True\par
-                self.force-=2\par
-                print("Whack! You hit a tree.")\par
-                hole.printMap()\par
-                time.sleep(1)\par
-                os.system('cls' if os.name == 'nt' else 'clear')\par
-        ## out of bounds\par
-            elif hole.map[hole.discLoc[0]][hole.discLoc[1]] == "|" or hole.map[hole.discLoc[0]][hole.discLoc[1]] == "_":\par
-                hole.score+=1\par
-                self.force = 0\par
-                hole.discLoc[0]=self.lastRow\par
-                hole.discLoc[1]=self.lastCol\par
-        ## make basket\par
-            elif hole.map[hole.discLoc[0]][hole.discLoc[1]] == "B":\par
-                break\par
-            hole.updateMap()\par
-            hole.printMap()\par
-            time.sleep(.25)\par
-    \par
-def getNewThrow():\par
-    handed = input("What hand will you throw with?:\\n1. right\\n2. left\\n")\par
-    swing = input("\\n1. Forehand\\n2. backhand\\n")\par
-    \par
-    disc = input("\\nWhat disc do you want to throw?\\n1. Putter\\n2. Mid\\n3. Driver\\n")\par
-    stability = input("\\n1. Overstable\\n2. Straight\\n3. Understable\\n")\par
-    angle = input("\\nWhat type of throw?\\n1. Hyzer\\n2. Flat\\n3. Anhyzer\\n")\par
-    force = int(input("\\nHow hard will you throw? 1-10\\n"))\par
-    direction = input("\\nWhat direction? \\nEnter numpad number for direction\\n")\par
-    fade = 0\par
-    turn = 0\par
-    return Throw(fade,turn,handed,swing,disc,stability,angle,force,direction)\par
-\par
-#Make maps for course\par
-for i in range(numHoles):\par
-    maps.append(makeMap(height,width))\par
-\par
-#Make hole objects\par
-currentHole = 2\par
-holeLength = [250,300,250,250,250,250,250,250,250]\par
-holeName = []\par
-teePos = [[19,20],[20,3],[20,16],[17,10],[20,25],[19,5],[19,17],[19,13],[19,12]]\par
-basketPos = [(7,16),(5,25),(7,15),(7,15),(7,15),(7,15),(7,15),(7,15),(7,15)]\par
-treePos = [[(11,21),(13,17),(15,15),(17,13)],[(6,20),(8,15)],[(11,21),(13,17),(15,15),(17,13)],[(11,21),(13,17),(15,15),(17,13)],[(11,21),(13,17),(15,15),(17,13)],[(11,21),(13,17),(15,15),(17,13)],[(11,21),(13,17),(15,15),(17,13)],[(11,21),(13,17),(15,15),(17,13)],[(11,21),(13,17),(15,15),(17,13)]]\par
-holes = []\par
-strokes = 0\par
-scoreCard = []\par
-for i in range(numHoles): #Make Hole Names\par
-    holeName.append("Hole "+str(i+1))\par
-for i in range(numHoles):\par
-    holes.append(Hole(maps[i],holeLength[i],holeName[i],teePos[i],basketPos[i],treePos[i]))\par
-\par
-#play round\par
-print("Welcome to Text Disc Golf Simulator")\par
-input("Press enter to start")\par
-os.system('cls' if os.name == 'nt' else 'clear')\par
-for hole in holes:\par
-    hole.playHole()\par
-    scoreCard.append(hole.score)\par
-    print(scoreCard)\par
-}
- 
+import time, os
+
+height = 20
+width = 40
+numHoles = 9
+maps=[]
+
+def makeMap(height,width):
+    map=[]
+    map.append(list(" "+("_"*width)))
+    for j in range(height):
+        map.append(list("|"+(" "*width)+"|"))
+    map.append(list("|"+("_"*width)+"|"))
+    return map
+    
+class Hole:
+    def __init__(self,MAP,LENGTH,NAME,TEE,BASKET,TREES):
+        self.map = MAP
+        self.length = LENGTH
+        self.name = NAME
+        self.tee = TEE
+        self.basket = BASKET
+        self.discLoc = TEE
+        self.trees = TREES
+        self.score = -3
+        self.par = 3
+    
+    def updateMap(self):
+        self.map[self.discLoc[0]][self.discLoc[1]] = "o"
+        self.map[self.basket[0]][self.basket[1]] = "B"
+        for tree in self.trees:
+            self.map[tree[0]][tree[1]] = "T"
+        
+    def printMap(self):
+        for x in self.map:
+            print(*x, sep='')
+        print(f"{self.name}: {self.length} feet\n")
+    
+    def deleteDisc(self):
+        self.map[self.discLoc[0]][self.discLoc[1]] = " "
+    
+    def playHole(self):
+        while self.map[self.discLoc[0]][self.discLoc[1]] != "B":    
+            print(f"Throws this hole: {self.score+self.par}")
+            self.updateMap()
+            self.printMap()
+        
+            currentThrow = getNewThrow()
+            currentThrow.updateValues()
+            currentThrow.showThrow(hole)
+            self.score+=1
+            os.system('cls' if os.name == 'nt' else 'clear')
+        print("Clank go the chains!")
+        print(f"You completed this hole in {self.score+self.par} throws.")
+        self.printMap()
+        input("Press enter to go to next hole")
+        os.system('cls' if os.name == 'nt' else 'clear')
+
+class Throw:
+    def __init__(self,FADE,TURN,HANDED,SWING,DISC,STABILITY,ANGLE,FORCE,DIRECTION):
+        self.fade=FADE
+        self.turn=TURN
+        self.handed=HANDED
+        self.swing=SWING
+        self.disc=DISC
+        self.stability=STABILITY
+        self.angle=ANGLE
+        self.force=FORCE
+        self.direction=DIRECTION
+        self.lastRow = 19
+        self.lastCol = 20
+        self.hit = False
+        self.turnSpeed = FORCE/2
+        if DISC == "1":
+            self.fadeSpeed = 1
+        elif DISC == "2":
+            self.fadeSpeed = 2
+        else:
+            self.fadeSpeed = 3
+        
+    def updateValues(self):
+        if self.handed=="1":
+            self.handed=1
+        else:
+            self.handed=-1
+        if self.swing == "2":
+            self.swing=-1
+        else:
+            self.swing=1
+        if self.disc == "1":
+            self.turnSpeed = 9
+            self.fadeSpeed = 1
+        elif self.disc == "2":
+            self.force*=1.3
+            self.turnSpeed = 7
+            self.fadeSpeed = 3
+        elif self.disc == "3":
+            self.force*=1.5
+            self.turnSpeed = 7
+            self.fadeSpeed = 5
+        if self.stability == "1":
+            self.fade=(self.handed*self.swing)*2
+        elif self.stability == "2":
+            self.fade=(self.handed*self.swing)
+        elif self.stability == "3":
+            self.turn=(self.handed*self.swing)*-1
+            self.fade=(self.handed*self.swing)
+        if self.angle=="hyzer":
+            self.turn+=(self.handed*self.swing)
+            self.fade+=(self.handed*self.swing)
+        elif self.angle=="anhyzer":
+            self.turn-=(self.handed*self.swing)
+    
+    def moveDisc(self):
+        if self.direction=="8":
+            if self.hit==True:
+                hole.discLoc[0]+=1
+            else:
+                hole.discLoc[0]+=-1
+            if self.force < self.fadeSpeed:
+                hole.discLoc[1]+=self.fade
+            elif self.force > self.turnSpeed:
+                hole.discLoc[1]+=self.turn
+        elif self.direction=="7":
+            if self.hit==True:
+                hole.discLoc[0]+=1
+                hole.discLoc[1]-=1
+            else:
+                hole.discLoc[0]+=-1
+                hole.discLoc[1]-=1
+            if self.force < self.fadeSpeed:
+                hole.discLoc[1]+=self.fade
+            elif self.force > self.turnSpeed:
+                hole.discLoc[1]+=self.turn
+        elif self.direction=="9":
+            if self.hit==True:
+                hole.discLoc[0]+=1
+                hole.discLoc[1]+=1
+            else:
+                hole.discLoc[0]+=-1
+                hole.discLoc[1]+=1
+            if self.force < self.fadeSpeed:
+                hole.discLoc[1]+=self.fade
+            elif self.force > self.turnSpeed:
+                hole.discLoc[1]+=self.turn
+        elif self.direction=="4":
+            if self.hit==True:
+                hole.discLoc[1]+=1
+            else:
+                hole.discLoc[1]+=-1
+            if self.force < 4:
+                hole.discLoc[0]+=self.fade
+            elif self.force > 7:
+                hole.discLoc[0]+=self.turn
+        elif self.direction=="6":
+            if self.hit==True:
+                hole.discLoc[1]+=-1
+            else:
+                hole.discLoc[1]+=1
+            if self.force < 4:
+                hole.discLoc[0]+=self.fade
+            elif self.force > 7:
+                hole.discLoc[0]+=self.turn
+        elif self.direction=="1":
+            if self.hit==True:
+                hole.discLoc[0]+=-1
+                hole.discLoc[1]+=-1
+            else:
+                hole.discLoc[0]+=1
+                hole.discLoc[1]+=-1
+            if self.force < self.fadeSpeed:
+                hole.discLoc[1]-=self.fade
+            elif self.force > self.fadeSpeed:
+                hole.discLoc[1]-=self.turn
+        elif self.direction=="2":
+            if self.hit==True:
+                hole.discLoc[0]+=-1
+            else:
+                hole.discLoc[0]+=1
+            if self.force < self.fadeSpeed:
+                hole.discLoc[1]-=self.fade
+            elif self.force > self.fadeSpeed:
+                hole.discLoc[1]-=self.turn
+        elif self.direction=="3":
+            if self.hit==True:
+                hole.discLoc[0]+=-1
+                hole.discLoc[1]+=1
+            else:
+                hole.discLoc[0]+=1
+                hole.discLoc[1]+=1
+            if self.force < self.fadeSpeed:
+                hole.discLoc[1]-=self.fade
+            elif self.force > self.fadeSpeed:
+                hole.discLoc[1]-=self.turn
+        self.force-=1
+    
+    def showThrow(self,hole):
+        # While disc still moving and not in basket
+        while self.force > 0 and hole.map[hole.discLoc[0]][hole.discLoc[1]] != "B":
+            os.system('cls' if os.name == 'nt' else 'clear')
+            self.lastRow=hole.discLoc[0]
+            self.lastCol=hole.discLoc[1]
+            hole.deleteDisc()
+            self.moveDisc()
+        ## hit tree
+            if hole.map[hole.discLoc[0]][hole.discLoc[1]] == "T":
+                self.hit=True
+                self.force-=2
+                print("Whack! You hit a tree.")
+                hole.printMap()
+                time.sleep(1)
+                os.system('cls' if os.name == 'nt' else 'clear')
+        ## out of bounds
+            elif hole.map[hole.discLoc[0]][hole.discLoc[1]] == "|" or hole.map[hole.discLoc[0]][hole.discLoc[1]] == "_":
+                hole.score+=1
+                self.force = 0
+                hole.discLoc[0]=self.lastRow
+                hole.discLoc[1]=self.lastCol
+        ## make basket
+            elif hole.map[hole.discLoc[0]][hole.discLoc[1]] == "B":
+                break
+            hole.updateMap()
+            hole.printMap()
+            time.sleep(.25)
+    
+def getNewThrow():
+    handed = input("What hand will you throw with?:\n1. right\n2. left\n")
+    swing = input("\n1. Forehand\n2. backhand\n")
+    
+    disc = input("\nWhat disc do you want to throw?\n1. Putter\n2. Mid\n3. Driver\n")
+    stability = input("\n1. Overstable\n2. Straight\n3. Understable\n")
+    angle = input("\nWhat type of throw?\n1. Hyzer\n2. Flat\n3. Anhyzer\n")
+    force = int(input("\nHow hard will you throw? 1-10\n"))
+    direction = input("\nWhat direction? \nEnter numpad number for direction\n")
+    fade = 0
+    turn = 0
+    return Throw(fade,turn,handed,swing,disc,stability,angle,force,direction)
+
+#Make maps for course
+for i in range(numHoles):
+    maps.append(makeMap(height,width))
+
+#Make hole objects
+currentHole = 2
+holeLength = [250,300,250,250,250,250,250,250,250]
+holeName = []
+teePos = [[19,20],[20,3],[20,16],[17,10],[20,25],[19,5],[19,17],[19,13],[19,12]]
+basketPos = [(7,16),(5,25),(7,15),(7,15),(7,15),(7,15),(7,15),(7,15),(7,15)]
+treePos = [[(11,21),(13,17),(15,15),(17,13)],[(6,20),(8,15)],[(11,21),(13,17),(15,15),(17,13)],[(11,21),(13,17),(15,15),(17,13)],[(11,21),(13,17),(15,15),(17,13)],[(11,21),(13,17),(15,15),(17,13)],[(11,21),(13,17),(15,15),(17,13)],[(11,21),(13,17),(15,15),(17,13)],[(11,21),(13,17),(15,15),(17,13)]]
+holes = []
+strokes = 0
+scoreCard = []
+for i in range(numHoles): #Make Hole Names
+    holeName.append("Hole "+str(i+1))
+for i in range(numHoles):
+    holes.append(Hole(maps[i],holeLength[i],holeName[i],teePos[i],basketPos[i],treePos[i]))
+
+#play round
+print("Welcome to Text Disc Golf Simulator")
+input("Press enter to start")
+os.system('cls' if os.name == 'nt' else 'clear')
+for hole in holes:
+    hole.playHole()
+    scoreCard.append(hole.score)
+    print(scoreCard)
