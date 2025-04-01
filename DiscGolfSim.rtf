@@ -68,7 +68,7 @@ class Hole:
         
             currentThrow = getNewThrow()
             currentThrow.updateValues()
-            currentThrow.showThrow(hole)
+            currentThrow.showThrow(self)
             self.score+=1
             os.system('cls' if os.name == 'nt' else 'clear')
         print("Clank go the chains!")
