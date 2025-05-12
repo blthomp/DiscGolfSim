@@ -32,6 +32,40 @@ def practice():
         hole.discLoc[0]=practiceHeight//2
         hole.discLoc[1]=practiceWidth//2
 
+def test():
+    hole = Hole(makeMap(practiceHeight,practiceWidth))
+    hole.updateMap()
+    fade = 0
+    turn = 0
+    #right:1, left:2
+    sameHand = "1"
+    #forehand:1,backhand:2
+    swing = "2"
+    #putter:1,mid:2,driver:3
+    disc = "3"
+    #Overstable:1, Straight:2, Understable:3
+    stability = "2"
+    #Hyzer:1,Flat:2,Anhyzer:3
+    angle = "2"
+    force = 10
+    direction = ["1","2","3","4","6","7","8","9"]
+    throws = []
+    #t=Throw(fade,turn,sameHand,swing,disc,stability,angle,force,direction[0])
+    #make test throws
+    for i in range(8):
+        throws.append(Throw(fade,turn,sameHand,swing,disc,stability,angle,force,direction[i]))
+    #show test throws
+    for t in throws:
+        hole.printMap()
+        t.updateValues()
+        print(t.fade,t.turn,t.swing,t.disc,t.stability,t.angle,t.force,t.direction)
+        t.showThrow(hole)
+        input("Enter to continue")
+        hole.discLoc[0]=practiceHeight//2
+        hole.discLoc[1]=practiceWidth//2
+        
+        
+
 class Hole:
     def __init__(self,MAP,LENGTH=[200],NAME="Practice",TEE=[20,40],BASKET=[5,20],TREES=[]):
         self.map = MAP
@@ -327,10 +361,12 @@ for i in range(numHoles):
 
 #play round
 print("Welcome to Text Disc Golf Simulator")
-gametype = input("1. Practice\n2. Play round\n")
+gametype = input("1. Practice\n2. Play round\n3. Test\n")
 sameHand = input("What hand will you throw with?:\n1. right\n2. left\n")
 os.system('cls' if os.name == 'nt' else 'clear')
 if gametype == "2":
     playRound()
+elif gametype == "3":
+    test()
 else:
     practice()
