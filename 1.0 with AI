@@ -1,0 +1,479 @@
+import time, os, sys
+
+practiceHeight = 40
+practiceWidth = 80
+numHoles = 9
+maps = []
+mode = ""
+sameHand = "1"
+
+
+def clear_screen():
+    sys.stdout.flush()
+    try:
+        if sys.stdin.isatty():
+            os.system("cls" if os.name == "nt" else "clear")
+        else:
+            print("\n" * 15)
+    except Exception:
+        print("\n" * 15)
+
+
+def safe_input(prompt):
+    """Flushes output streams to avoid non-TTY I/O errors."""
+    sys.stdout.flush()
+    try:
+        return input(prompt).strip()
+    except (OSError, EOFError):
+        return "1"
+
+
+def makeMap(height, width):
+    map_grid = []
+    map_grid.append(list(" " + ("_" * width)))
+    for j in range(height):
+        map_grid.append(list("|" + (" " * width) + "|"))
+    map_grid.append(list("|" + ("_" * width) + "|"))
+    return map_grid
+
+
+def format_score_to_par(rel_score):
+    """Formats relative score into standard disc golf terms (-2, E, +3)."""
+    if rel_score < 0:
+        return str(rel_score)
+    elif rel_score == 0:
+        return "E"
+    else:
+        return f"+{rel_score}"
+
+
+def playRound():
+    cumulative_strokes = 0
+    cumulative_par = 0
+
+    for hole in holes:
+        hole.playHole()
+        scoreCard.append(hole.score)
+
+        cumulative_strokes += hole.score
+        cumulative_par += hole.par
+        total_rel = cumulative_strokes - cumulative_par
+
+        print("\n" + "=" * 35)
+        print("           ROUND SCORECARD")
+        print("=" * 35)
+        for idx, h in enumerate(holes[: len(scoreCard)]):
+            rel = h.score - h.par
+            print(f"Hole {idx + 1}: {h.score} strokes (Par {h.par}) -> {format_score_to_par(rel)}")
+
+        print("-" * 35)
+        print(f"Total Score: {cumulative_strokes} ({format_score_to_par(total_rel)})\n")
+
+    print(f"\nRound Complete! Final Score: {cumulative_strokes} ({format_score_to_par(total_rel)} to Par)")
+
+
+def practice():
+    hole = Hole(makeMap(practiceHeight, practiceWidth))
+    hole.updateMap()
+    while True:
+        hole.printMap()
+        currentThrow = getNewThrow()
+        currentThrow.updateValues()
+        currentThrow.showThrow(hole)
+        hole.discLoc[0] = practiceHeight // 2
+        hole.discLoc[1] = practiceWidth // 2
+
+
+class Hole:
+    def __init__(
+        self,
+        MAP,
+        LENGTH=200,
+        NAME="Practice",
+        TEE=None,
+        BASKET=None,
+        TREES=None,
+        OUTOFBOUNDS=None,
+        MANDO=None,
+        DROP_ZONE=None,
+        PAR=3,
+    ):
+        self.map = MAP
+        self.length = LENGTH
+        self.name = NAME
+        self.basket = list(BASKET) if BASKET else [5, 20]
+        self.discLoc = list(TEE) if TEE else [20, 40]
+        self.trees = [list(t) for t in TREES] if TREES else []
+        self.score = 0
+        self.par = PAR
+        self.outOfBounds = OUTOFBOUNDS if OUTOFBOUNDS else []
+        # MANDO format: {"row": int, "left_col": int, "right_col": int}
+        self.mando = MANDO
+        self.dropZone = list(DROP_ZONE) if DROP_ZONE else [self.discLoc[0], self.discLoc[1]]
+
+    def updateMap(self):
+        # Draw trees first
+        for tree in self.trees:
+            if 0 <= tree[0] < len(self.map) and 0 <= tree[1] < len(self.map[0]):
+                self.map[tree[0]][tree[1]] = "T"
+
+        # Mark Mandatory Gateway posts with 'M'
+        if self.mando:
+            m_row = self.mando["row"]
+            l_col = self.mando["left_col"]
+            r_col = self.mando["right_col"]
+            if 0 <= m_row < len(self.map):
+                if 0 <= l_col < len(self.map[0]):
+                    self.map[m_row][l_col] = "M"
+                if 0 <= r_col < len(self.map[0]):
+                    self.map[m_row][r_col] = "M"
+
+        self.map[self.basket[0]][self.basket[1]] = "B"
+        self.map[self.discLoc[0]][self.discLoc[1]] = "o"
+
+    def printMap(self):
+        for x in self.map:
+            print(*x, sep="")
+        print(f"{self.name}: {self.length} feet | Par {self.par}\n")
+
+    def deleteDisc(self):
+        if (
+            0 <= self.discLoc[0] < len(self.map)
+            and 0 <= self.discLoc[1] < len(self.map[0])
+        ):
+            self.map[self.discLoc[0]][self.discLoc[1]] = " "
+
+    def holeDone(self):
+        return self.discLoc[0] == self.basket[0] and self.discLoc[1] == self.basket[1]
+
+    def playHole(self):
+        self.score = 0
+        while not self.holeDone():
+            print(f"Stroke #{self.score + 1}")
+            self.updateMap()
+            self.printMap()
+            currentThrow = getNewThrow()
+            currentThrow.updateValues()
+            currentThrow.showThrow(self)
+            self.score += 1
+            clear_screen()
+
+        rel_to_par = self.score - self.par
+        print("Clank go the chains!")
+        print(f"You completed {self.name} in {self.score} throws ({format_score_to_par(rel_to_par)}).")
+        self.printMap()
+        safe_input("Press enter to continue...")
+        clear_screen()
+
+
+class Throw:
+    def __init__(
+        self, FADE, TURN, HANDED, SWING, DISC, STABILITY, ANGLE, FORCE, DIRECTION
+    ):
+        self.fade = FADE
+        self.turn = TURN
+        self.handed = HANDED
+        self.swing = SWING
+        self.disc = DISC
+        self.stability = STABILITY
+        self.angle = ANGLE
+        self.force = FORCE
+        self.direction = DIRECTION
+        self.lastRow = 19
+        self.lastCol = 20
+        self.hit = False
+        self.orthogonal = ["8", "6", "2", "4"]
+
+        if DISC == "1":
+            self.turnSpeed = 6
+            self.fadeSpeed = 3
+        elif DISC == "2":
+            self.turnSpeed = 8
+            self.fadeSpeed = 4
+        else:
+            self.turnSpeed = 11
+            self.fadeSpeed = 6
+
+    def updateValues(self):
+        h_val = 1 if self.handed == "1" else -1
+        s_val = 1 if self.swing == "1" else -1
+        spin_factor = h_val * s_val
+
+        if self.disc == "1":
+            self.force = int(self.force * 1.0)
+        elif self.disc == "2":
+            self.force = int(self.force * 1.4)
+        else:
+            self.force = int(self.force * 2.0)
+
+        if self.stability == "1":
+            self.fade = spin_factor * 2
+            self.turn = 0
+        elif self.stability == "2":
+            self.fade = spin_factor * 1
+            self.turn = 0
+        elif self.stability == "3":
+            self.turn = spin_factor * -1
+            self.fade = spin_factor * 1
+
+        if self.angle == "1":
+            self.fade += spin_factor * 1
+            self.turn += spin_factor * 1
+        elif self.angle == "3":
+            self.turn -= spin_factor * 2
+
+        if self.direction not in self.orthogonal:
+            if self.force >= 10:
+                self.force -= 3
+            elif self.force >= 5:
+                self.force -= 1
+
+    def moveDisc(self, hole):
+        dr, dc = 0, 0
+        if self.direction == "8":
+            dr = -1
+        elif self.direction == "2":
+            dr = 1
+        elif self.direction == "4":
+            dc = -1
+        elif self.direction == "6":
+            dc = 1
+        elif self.direction == "7":
+            dr, dc = -1, -1
+        elif self.direction == "9":
+            dr, dc = -1, 1
+        elif self.direction == "1":
+            dr, dc = 1, -1
+        elif self.direction == "3":
+            dr, dc = 1, 1
+
+        if self.hit:
+            dr, dc = -dr, -dc
+
+        hole.discLoc[0] += dr
+        hole.discLoc[1] += dc
+
+        if self.force >= self.turnSpeed and self.turn != 0:
+            hole.discLoc[1] += self.turn
+        elif self.force <= self.fadeSpeed and self.fade != 0:
+            hole.discLoc[1] += self.fade
+
+        self.force -= 1
+
+    def showThrow(self, hole):
+        distance_traveled = 0
+        max_row = len(hole.map) - 1
+        max_col = len(hole.map[0]) - 1
+
+        while self.force > 0 and not hole.holeDone():
+            clear_screen()
+            self.lastRow = hole.discLoc[0]
+            self.lastCol = hole.discLoc[1]
+
+            if mode == "play":
+                hole.deleteDisc()
+
+            self.moveDisc(hole)
+            distance_traveled += 16
+
+            # Mandatory Gate line crossing verification
+            if hole.mando:
+                m_row = hole.mando["row"]
+                l_col = hole.mando["left_col"]
+                r_col = hole.mando["right_col"]
+
+                # Check if disc crossed or landed on mandatory row
+                crossed_mando_line = (
+                    (self.lastRow > m_row >= hole.discLoc[0])
+                    or (self.lastRow < m_row <= hole.discLoc[0])
+                    or (hole.discLoc[0] == m_row)
+                )
+
+                if crossed_mando_line:
+                    # Missed mando if outside mandatory gate boundaries
+                    if hole.discLoc[1] < l_col or hole.discLoc[1] > r_col:
+                        print("Missed Mando! Penalty stroke applied. Proceeding to Drop Zone.")
+                        hole.score += 1  # 1 Penalty Stroke
+                        self.force = 0
+                        hole.discLoc[0] = hole.dropZone[0]
+                        hole.discLoc[1] = hole.dropZone[1]
+                        hole.updateMap()
+                        hole.printMap()
+                        time.sleep(1.2)
+                        break
+
+            # Out of bounds check
+            if (
+                hole.discLoc[0] <= 0
+                or hole.discLoc[0] >= max_row
+                or hole.discLoc[1] <= 0
+                or hole.discLoc[1] >= max_col
+            ):
+                print("Out of Bounds!")
+                hole.score += 1
+                self.force = 0
+                hole.discLoc[0] = max(1, min(max_row - 1, self.lastRow))
+                hole.discLoc[1] = max(1, min(max_col - 1, self.lastCol))
+                hole.updateMap()
+                hole.printMap()
+                time.sleep(1.0)
+                break
+
+            # Tree collision check
+            if [hole.discLoc[0], hole.discLoc[1]] in hole.trees:
+                self.hit = True
+                self.force -= 2
+                print("Whack! You hit a tree.")
+                hole.updateMap()
+                hole.printMap()
+                time.sleep(0.8)
+                continue
+
+            if (
+                abs(hole.discLoc[0] - hole.basket[0]) <= 1
+                and abs(hole.discLoc[1] - hole.basket[1]) <= 1
+            ):
+                hole.discLoc[0] = hole.basket[0]
+                hole.discLoc[1] = hole.basket[1]
+                break
+
+            hole.updateMap()
+            hole.printMap()
+            print(f"Distance Traveled: ~{distance_traveled} feet")
+            time.sleep(0.4)
+
+
+def getNewThrow():
+    print("\n" + "=" * 45)
+    print("           CONFIGURE YOUR THROW")
+    print("=" * 45)
+    print("1. Swing:     [1] Forehand   | [2] Backhand")
+    print("2. Disc:      [1] Putter     | [2] Midrange    | [3] Driver")
+    print("3. Stability: [1] Overstable | [2] Straight    | [3] Understable")
+    print("4. Angle:     [1] Hyzer      | [2] Flat        | [3] Anhyzer")
+    print("5. Power:     [1 to 10]")
+    print("6. Direction: [Numpad: 8=Up, 9=Up-R, 6=R, 4=L, 2=Down, etc.]")
+    print("-" * 45)
+
+    user_input = safe_input(
+        "Enter 6 numbers separated by spaces\n"
+        "[Swing Disc Stability Angle Power Direction]\n"
+        "Example (Backhand Driver Overstable Hyzer Power:10 Aim:Straight Up):\n"
+        "> 2 3 1 1 10 8\n\nYour Throw: "
+    )
+
+    parts = user_input.split()
+
+    swing = parts[0] if len(parts) > 0 else "2"
+    disc = parts[1] if len(parts) > 1 else "2"
+    stability = parts[2] if len(parts) > 2 else "2"
+    angle = parts[3] if len(parts) > 3 else "2"
+
+    try:
+        force = int(parts[4]) if len(parts) > 4 else 8
+    except ValueError:
+        force = 8
+
+    direction = parts[5] if len(parts) > 5 else "8"
+
+    return Throw(
+        0, 0, sameHand, swing, disc, stability, angle, force, direction
+    )
+
+
+holeLength = [210, 340, 275, 180, 410, 290, 315, 230, 380]
+holePar = [3, 3, 3, 3, 4, 3, 3, 3, 4]  # Adjusted Hole 5 & 9 to Par 4
+holeName = [
+    "Hole 1 - Straight Shot",
+    "Hole 2 - Long Tunnel",
+    "Hole 3 - Dogleg Left",
+    "Hole 4 - Short Island",
+    "Hole 5 - Double Mando Woods",
+    "Hole 6 - Dogleg Right",
+    "Hole 7 - Scattered Oaks",
+    "Hole 8 - Dense Gauntlet",
+    "Hole 9 - Monster Bomb",
+]
+
+FEET_PER_ROW = 16
+width = 40
+
+holes = []
+scoreCard = []
+
+for i in range(numHoles):
+    target_length = holeLength[i]
+    rows_needed = round(target_length / FEET_PER_ROW)
+
+    h_height = rows_needed + 4
+    tee_row = h_height - 2
+    basket_row = tee_row - rows_needed
+
+    h_map = makeMap(h_height, width)
+
+    tee_pos = [tee_row, 20]
+
+    # Custom basket placement per hole design
+    if i == 2:    # Hole 3 - Dogleg Left
+        basket_pos = [basket_row, 6]
+    elif i == 5:  # Hole 6 - Dogleg Right
+        basket_pos = [basket_row, 34]
+    elif i == 6:  # Hole 7 - Scattered Oaks
+        basket_pos = [basket_row, 26]
+    elif i == 8:  # Hole 9 - Monster Bomb
+        basket_pos = [basket_row, 30]
+    else:         # Holes 1, 2, 4, 5, 8
+        basket_pos = [basket_row, 20]
+
+    # Mando gate definitions (Hole 5 features a Double Mando gate marked 'M')
+    mando_gate = None
+    drop_zone_pos = None
+
+    if i == 4:  # Hole 5 - Double Mando
+        mando_row = max(3, int(h_height * 0.45))
+        mando_gate = {"row": mando_row, "left_col": 16, "right_col": 24}
+        drop_zone_pos = [mando_row + 1, 20]
+
+    scaled_trees = []
+    base_trees = [
+        [(12, 16), (12, 24), (8, 18), (8, 22)],
+        [(16, 17), (16, 23), (12, 17), (12, 23), (8, 17), (8, 23), (4, 17), (4, 23)],
+        [(15, 10), (15, 15), (15, 20), (11, 5), (11, 10), (11, 15)],
+        [(6, 16), (6, 24), (2, 16), (2, 24), (6, 20)],
+        [(10, 5), (10, 10), (10, 15), (10, 25), (10, 30), (10, 35), (5, 18), (5, 22)],
+        [(15, 20), (15, 25), (15, 30), (11, 25), (11, 30), (11, 35)],
+        [(14, 12), (13, 28), (10, 18), (9, 25), (6, 14), (5, 30)],
+        [(16, 20), (13, 19), (13, 21), (10, 20), (7, 19), (7, 21), (4, 20)],
+        [(6, 30), (6, 38), (4, 32), (3, 37)],
+    ]
+
+    for tr in base_trees[i]:
+        scaled_row = max(2, min(h_height - 3, int(tr[0] * (h_height / 22))))
+        scaled_trees.append((scaled_row, tr[1]))
+
+    holes.append(
+        Hole(
+            h_map,
+            holeLength[i],
+            holeName[i],
+            tee_pos,
+            basket_pos,
+            scaled_trees,
+            [],
+            mando_gate,
+            drop_zone_pos,
+            holePar[i],
+        )
+    )
+
+print("=== Welcome to Text Disc Golf Simulator ===")
+gametype = safe_input("1. Practice\n2. Play Round\nOption: ")
+sameHand = safe_input("\nWhat is your dominant throw hand?\n1. Right\n2. Left\nOption: ")
+clear_screen()
+
+if gametype == "2":
+    mode = "play"
+    playRound()
+else:
+    mode = "practice"
+    practice()
